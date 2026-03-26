@@ -1,5 +1,7 @@
 # Diffusion-based Generation, Optimization, and Planning in 3D Scenes
 
+English | <a href="./README_CN.md">中文</a>
+
 <p align="left">
     <a href='https://scenediffuser.github.io/paper.pdf'>
       <img src='https://img.shields.io/badge/Paper-PDF-red?style=plastic&logo=adobeacrobatreader&logoColor=red' alt='Paper PDF'>

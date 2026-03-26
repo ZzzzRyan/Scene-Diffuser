@@ -1,5 +1,7 @@
 # 基于扩散的 3D 场景生成、优化与规划
 
+<a href="./README.md">English</a> | 中文
+
 <p align="left">
     <a href='https://scenediffuser.github.io/paper.pdf'>
       <img src='https://img.shields.io/badge/Paper-PDF-red?style=plastic&logo=adobeacrobatreader&logoColor=red' alt='论文 PDF'>
