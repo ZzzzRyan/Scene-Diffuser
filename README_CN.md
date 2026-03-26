@@ -71,9 +71,13 @@ conda activate scene-diff
 
 ## 数据与检查点
 
+> 如果只是复现“任务 4: 3D 场景中的路径规划”，可以直接参考[路径规划运行教程](./tutorial_path_planning_cn.md)准备数据并运行。
+
 ### 1. 数据
 
 你可以使用我们[预处理好的数据](https://drive.google.com/drive/folders/1CKJER3CnVh0o8cwlN8a2c0kQ6HTEqvqj?usp=sharing)，或者按照[说明](./preprocessing/README.md)自行处理数据。
+
+即使使用了预处理数据，依然有一些额外的官方发布的数据资源需要下载，具体请参见[说明](./preprocessing/README.md)。
 
 将数据资源放在仓库根目录的 `data/` 下，默认布局如下：
 
@@ -86,7 +90,7 @@ data/
 └── scannet_path_planning/   # path_planning
 ```
 
-数据路径可通过环境变量覆盖，详见[新环境安装说明](./install_new_env_cn.md)。
+数据路径配置都在 `configs/default.yaml` 中，你可以按需求修改或者直接通过环境变量覆盖它们。
 
 ### 2. 检查点
 

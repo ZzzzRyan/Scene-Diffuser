@@ -71,9 +71,13 @@ Tasks on the `obj` branch (for example grasp generation and robot-arm planning) 
 
 ## Data & Checkpoints
 
+> If you only want to reproduce "Task 4: Path Planning in 3D Scenes", you can directly refer to the [Path Planning Tutorial](./tutorial_path_planning_cn.md) for data preparation and running instructions.
+
 ### 1. Data
 
 You can use our [pre-processed data](https://drive.google.com/drive/folders/1CKJER3CnVh0o8cwlN8a2c0kQ6HTEqvqj?usp=sharing) or process the data by yourself following the [instructions](./preprocessing/README.md).
+
+Even when using pre-processed data, there are still some additional officially released data assets that need to be downloaded. For details, please refer to the [instructions](./preprocessing/README.md).
 
 Place data assets under `data/` at the repository root. The default layout is:
 
@@ -86,7 +90,7 @@ data/
 └── scannet_path_planning/   # path_planning
 ```
 
-Data paths can be overridden via environment variables — see [New Environment Installation Guide](./install_new_env_cn.md) for details.
+All data path configurations are in `configs/default.yaml`. You can modify them as needed or override them directly through environment variables.
 
 ### 2. Checkpoints
 
