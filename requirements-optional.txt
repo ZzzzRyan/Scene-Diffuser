@@ -1,0 +1,9 @@
+# Optional dependencies for branch- or feature-specific workflows.
+#
+# Install this file only if you explicitly need:
+# 1. Grasp / hand-model workflows from the `obj` branch.
+# 2. VPoser guidance backed by `human_body_prior`.
+
+git+https://github.com/Silverster98/pytorch_kinematics@472a48f4a5f14d611f53fab457e6e8b31f57445e
+git+https://github.com/nghorbani/human_body_prior@78c86eae5ed518ae22bf197fd74211bbfa45551a
+urdf-parser-py==0.0.4

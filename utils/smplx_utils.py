@@ -6,6 +6,30 @@ from pyquaternion import Quaternion as Q
 
 from utils.plot import singleton
 
+
+def _safe_cross(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+    """Use an explicit dimension to avoid PyTorch deprecation warnings."""
+    return torch.cross(a, b, dim=-1)
+
+
+def _compute_vertex_normals(vertices: torch.Tensor, faces: torch.Tensor) -> torch.Tensor:
+    """Compute per-vertex normals on the same device as the input vertices."""
+    face_vertices = vertices[:, faces]
+    e1 = face_vertices[:, :, 1] - face_vertices[:, :, 0]
+    e2 = face_vertices[:, :, 2] - face_vertices[:, :, 0]
+    e1 = e1 / torch.norm(e1, dim=-1, p=2, keepdim=True).clamp_min(1e-12)
+    e2 = e2 / torch.norm(e2, dim=-1, p=2, keepdim=True).clamp_min(1e-12)
+    face_normals = _safe_cross(e1, e2)
+
+    vertex_normals = torch.zeros_like(vertices)
+    vertex_normals.index_add_(1, faces[:, 0], face_normals)
+    vertex_normals.index_add_(1, faces[:, 1], face_normals)
+    vertex_normals.index_add_(1, faces[:, 2], face_normals)
+    vertex_normals = vertex_normals / torch.norm(
+        vertex_normals, dim=-1, p=2, keepdim=True
+    ).clamp_min(1e-12)
+    return vertex_normals
+
 def convert_smplx_parameters_format(params: Any, target: str='tuple', keep_keys: List=None) -> Any:
     """ Convert smplx paramters among three different data type, i.e., tuple, np.array, dict.
     And return designated components accordining to `keep_keys`.
@@ -344,20 +368,7 @@ def smplx_signed_distance(object_points, smplx_vertices, smplx_face):
         signed_distance_to_obj: (B, H) signed distance to object vertex on each human vertex
         closest_obj_points: (B, H, 3) closest object vertex to each human vertex
     """
-    # compute vertex normals
-    smplx_face_vertices = smplx_vertices[:, smplx_face]
-    e1 = smplx_face_vertices[:, :, 1] - smplx_face_vertices[:, :, 0]
-    e2 = smplx_face_vertices[:, :, 2] - smplx_face_vertices[:, :, 0]
-    e1 = e1 / torch.norm(e1, dim=-1, p=2).unsqueeze(-1)
-    e2 = e2 / torch.norm(e2, dim=-1, p=2).unsqueeze(-1)
-    smplx_face_normal = torch.cross(e1, e2)     # (B, F, 3)
-
-    # compute vertex normal
-    smplx_vertex_normals = torch.zeros(smplx_vertices.shape).float().cuda()
-    smplx_vertex_normals.index_add_(1, smplx_face[:,0], smplx_face_normal)
-    smplx_vertex_normals.index_add_(1, smplx_face[:,1], smplx_face_normal)
-    smplx_vertex_normals.index_add_(1, smplx_face[:,2], smplx_face_normal)
-    smplx_vertex_normals = smplx_vertex_normals / torch.norm(smplx_vertex_normals, dim=-1, p=2).unsqueeze(-1)
+    smplx_vertex_normals = _compute_vertex_normals(smplx_vertices, smplx_face)
 
     # compute paired distance of each query point to each face of the mesh
     pairwise_distance = torch.norm(object_points.unsqueeze(2) - smplx_vertices.unsqueeze(1), dim=-1, p=2)    # (B, O, H)
@@ -366,7 +377,9 @@ def smplx_signed_distance(object_points, smplx_vertices, smplx_face):
     distance_to_human, closest_human_points_idx = pairwise_distance.min(dim=2)  # (B, O)
     closest_human_point = smplx_vertices.gather(1, closest_human_points_idx.unsqueeze(-1).expand(-1, -1, 3))  # (B, O, 3)
     query_to_surface = closest_human_point - object_points
-    query_to_surface = query_to_surface / torch.norm(query_to_surface, dim=-1, p=2).unsqueeze(-1)
+    query_to_surface = query_to_surface / torch.norm(
+        query_to_surface, dim=-1, p=2, keepdim=True
+    ).clamp_min(1e-12)
     closest_vertex_normals = smplx_vertex_normals.gather(1, closest_human_points_idx.unsqueeze(-1).repeat(1, 1, 3))
     same_direction = torch.sum(query_to_surface * closest_vertex_normals, dim=-1)
     signed_distance_to_human = same_direction.sign() * distance_to_human    # (B, O)

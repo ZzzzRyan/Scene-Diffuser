@@ -20,15 +20,14 @@ clip_grad_by_value:
 modeling_keys: ${task.dataset.modeling_keys}
 num_pca_comps: ${task.dataset.smplx_pca_comps}
 smpl_dir: ${task.dataset.smpl_dir}
-smpl_dir_slurm: ${task.dataset.smpl_dir_slurm}
+smpl_dir_slurm: ${optimizer.smpl_dir}
 vposer_dir: ${task.dataset.vposer_dir}
-vposer_dir_slurm: ${task.dataset.vposer_dir}
+vposer_dir_slurm: ${optimizer.vposer_dir}
 prox_dir: ${task.dataset.prox_dir}
-prox_dir_slurm: ${task.dataset.prox_dir_slurm}
+prox_dir_slurm: ${optimizer.prox_dir}
 gravity_dim: ${task.dataset.transform_cfg.gravity_dim}
 
 contact_body_part: ['back','gluteus','L_Hand','R_Hand','L_Leg','R_Leg','thighs']
-
 
 
 

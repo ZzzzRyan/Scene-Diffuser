@@ -56,7 +56,7 @@ class TransitionDown(nn.Module):
             for i in range(1, o.shape[0]):
                 count += (o[i].item() - o[i-1].item()) // self.stride
                 n_o.append(count)
-            n_o = torch.cuda.IntTensor(n_o)
+            n_o = torch.tensor(n_o, dtype=torch.int32, device=o.device)
             idx = pointops.furthestsampling(p, o, n_o)  # (m)
             n_p = p[idx.long(), :]  # (m, 3)
             x = pointops.queryandgroup(self.nsample, p, n_p, x, None, o, n_o, use_xyz=True)  # (m, 3+c, nsample)
@@ -221,7 +221,7 @@ class PointTransformerEnc(nn.Module):
         if not os.path.exists(weigth_path):
             raise Exception('Can\'t find pretrained point-transformer weights.')
 
-        model_dict = torch.load(weigth_path)
+        model_dict = torch.load(weigth_path, map_location='cpu', weights_only=False)
         static_dict = {}
         for key in model_dict.keys():
             if 'enc' in key:

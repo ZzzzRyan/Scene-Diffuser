@@ -6,11 +6,17 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from omegaconf import DictConfig
-from human_body_prior.tools.model_loader import load_model
-from human_body_prior.models.vposer_model import VPoser
 from chamfer_distance import ChamferDistance as chamfer_dist
 
+try:
+    from human_body_prior.tools.model_loader import load_model
+    from human_body_prior.models.vposer_model import VPoser
+except ImportError:
+    load_model = None
+    VPoser = None
+
 from utils.smplx_utils import convert_smplx_parameters_format
+from utils.smplx_utils import _compute_vertex_normals
 from models.optimizer.optimizer import Optimizer
 from models.optimizer.utils import SMPLXGeometry, extract_smplx, SMPLXLayer, transform_verts
 from models.base import OPTIMIZER
@@ -47,6 +53,10 @@ class MotionInSceneOptimizer(Optimizer):
         self.body_segments_dir = os.path.join(self.prox_dir, 'body_segments')
         
         if self.vposer:
+            if load_model is None or VPoser is None:
+                raise ImportError(
+                    "human_body_prior is required when motion optimization enables VPoser."
+                )
             vp, _ = load_model(self.vposer_dir, model_code=VPoser, 
                                 remove_words_in_model_weights='vp_model.')
             self.vposer_model = vp.to(self.device)
@@ -108,18 +118,7 @@ class MotionInSceneOptimizer(Optimizer):
                 smplx_vertices = vertices[:, t, :, :].detach()
                 smplx_face = torch.tensor(faces.astype(np.int64), device=vertices.device) # <F, 3>
 
-                smplx_face_vertices = smplx_vertices[:, smplx_face] # <B, F, 3, 3>
-                e1 = smplx_face_vertices[:, :, 1] - smplx_face_vertices[:, :, 0]
-                e2 = smplx_face_vertices[:, :, 2] - smplx_face_vertices[:, :, 0]
-                e1 = e1 / torch.norm(e1, dim=-1, p=2).unsqueeze(-1)
-                e2 = e2 / torch.norm(e2, dim=-1, p=2).unsqueeze(-1)
-                smplx_face_normal = torch.cross(e1, e2)  # <B, F, 3>
-
-                smplx_vertex_normals = torch.zeros(smplx_vertices.shape).float().cuda() # <B, V, 3>
-                smplx_vertex_normals.index_add_(1, smplx_face[:,0], smplx_face_normal)
-                smplx_vertex_normals.index_add_(1, smplx_face[:,1], smplx_face_normal)
-                smplx_vertex_normals.index_add_(1, smplx_face[:,2], smplx_face_normal)
-                smplx_vertex_normals = smplx_vertex_normals / torch.norm(smplx_vertex_normals, dim=-1, p=2).unsqueeze(-1) # <B, V, 3>
+                smplx_vertex_normals = _compute_vertex_normals(smplx_vertices, smplx_face)
             
                 ## compute distance from scene to body
                 ## 1. compute distance for all contact part vertex

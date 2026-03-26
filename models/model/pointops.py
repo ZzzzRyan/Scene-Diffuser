@@ -1,9 +1,30 @@
 from typing import Tuple
+import ctypes
+from pathlib import Path
 
 import torch
 from torch.autograd import Function
 import torch.nn as nn
 
+
+def _load_torch_shared_libs() -> None:
+    """Preload PyTorch shared libraries for custom CUDA extensions."""
+    torch_lib_dir = Path(torch.__file__).resolve().parent / "lib"
+    shared_libs = [
+        "libc10.so",
+        "libc10_cuda.so",
+        "libtorch.so",
+        "libtorch_cpu.so",
+        "libtorch_cuda.so",
+        "libtorch_python.so",
+    ]
+    for lib_name in shared_libs:
+        lib_path = torch_lib_dir / lib_name
+        if lib_path.exists():
+            ctypes.CDLL(str(lib_path), mode=ctypes.RTLD_GLOBAL)
+
+
+_load_torch_shared_libs()
 import pointops_cuda
 
 
@@ -18,8 +39,10 @@ class FurthestSampling(Function):
         n, b, n_max = xyz.shape[0], offset.shape[0], offset[0]
         for i in range(1, b):
             n_max = max(offset[i] - offset[i-1], n_max)
-        idx = torch.cuda.IntTensor(new_offset[b-1].item()).zero_()
-        tmp = torch.cuda.FloatTensor(n).fill_(1e10)
+        idx = torch.zeros(
+            new_offset[b-1].item(), device=xyz.device, dtype=torch.int32
+        )
+        tmp = torch.full((n,), 1e10, device=xyz.device, dtype=xyz.dtype)
         pointops_cuda.furthestsampling_cuda(b, n_max, xyz, offset, new_offset, tmp, idx)
         del tmp
         return idx
@@ -37,8 +60,8 @@ class KNNQuery(Function):
         if new_xyz is None: new_xyz = xyz
         assert xyz.is_contiguous() and new_xyz.is_contiguous()
         m = new_xyz.shape[0]
-        idx = torch.cuda.IntTensor(m, nsample).zero_()
-        dist2 = torch.cuda.FloatTensor(m, nsample).zero_()
+        idx = torch.zeros((m, nsample), device=xyz.device, dtype=torch.int32)
+        dist2 = torch.zeros((m, nsample), device=xyz.device, dtype=xyz.dtype)
         pointops_cuda.knnquery_cuda(m, nsample, xyz, new_xyz, offset, new_offset, idx, dist2)
         return idx, torch.sqrt(dist2)
 
@@ -54,7 +77,7 @@ class Grouping(Function):
         """
         assert input.is_contiguous() and idx.is_contiguous()
         m, nsample, n, c = idx.shape[0], idx.shape[1], input.shape[0], input.shape[1]
-        output = torch.cuda.FloatTensor(m, nsample, c)
+        output = torch.empty((m, nsample, c), device=input.device, dtype=input.dtype)
         pointops_cuda.grouping_forward_cuda(m, nsample, c, input, idx, output)
         ctx.n = n
         ctx.save_for_backward(idx)
@@ -69,7 +92,7 @@ class Grouping(Function):
         n = ctx.n
         idx, = ctx.saved_tensors
         m, nsample, c = grad_output.shape
-        grad_input = torch.cuda.FloatTensor(n, c).zero_()
+        grad_input = torch.zeros((n, c), device=grad_output.device, dtype=grad_output.dtype)
         pointops_cuda.grouping_backward_cuda(m, nsample, c, grad_output, idx, grad_input)
         return grad_input, None
 
@@ -109,7 +132,7 @@ class Subtraction(Function):
         """
         assert input1.is_contiguous() and input2.is_contiguous()
         n, c = input1.shape; nsample = idx.shape[-1]
-        output = torch.cuda.FloatTensor(n, nsample, c).zero_()
+        output = torch.zeros((n, nsample, c), device=input1.device, dtype=input1.dtype)
         pointops_cuda.subtraction_forward_cuda(n, nsample, c, input1, input2, idx, output)
         ctx.save_for_backward(idx)
         return output
@@ -122,8 +145,8 @@ class Subtraction(Function):
         """
         idx, = ctx.saved_tensors
         n, nsample, c = grad_output.shape
-        grad_input1 = torch.cuda.FloatTensor(n, c).zero_()
-        grad_input2 = torch.cuda.FloatTensor(n, c).zero_()
+        grad_input1 = torch.zeros((n, c), device=grad_output.device, dtype=grad_output.dtype)
+        grad_input2 = torch.zeros((n, c), device=grad_output.device, dtype=grad_output.dtype)
         pointops_cuda.subtraction_backward_cuda(n, nsample, c, idx, grad_output, grad_input1, grad_input2)
         return grad_input1, grad_input2, None
 
@@ -139,7 +162,7 @@ class Aggregation(Function):
         """
         assert input.is_contiguous() and position.is_contiguous() and weight.is_contiguous()
         n, nsample, c = position.shape; w_c = weight.shape[-1]
-        output = torch.cuda.FloatTensor(n, c).zero_()
+        output = torch.zeros((n, c), device=input.device, dtype=input.dtype)
         pointops_cuda.aggregation_forward_cuda(n, nsample, c, w_c, input, position, weight, idx, output)
         ctx.save_for_backward(input, position, weight, idx)
         return output
@@ -152,9 +175,9 @@ class Aggregation(Function):
         """
         input, position, weight, idx = ctx.saved_tensors
         n, nsample, c = position.shape; w_c = weight.shape[-1]
-        grad_input = torch.cuda.FloatTensor(n, c).zero_()
-        grad_position = torch.cuda.FloatTensor(n, nsample, c).zero_()
-        grad_weight = torch.cuda.FloatTensor(n, nsample, w_c).zero_()
+        grad_input = torch.zeros((n, c), device=grad_output.device, dtype=grad_output.dtype)
+        grad_position = torch.zeros((n, nsample, c), device=grad_output.device, dtype=grad_output.dtype)
+        grad_weight = torch.zeros((n, nsample, w_c), device=grad_output.device, dtype=grad_output.dtype)
         pointops_cuda.aggregation_backward_cuda(n, nsample, c, w_c, input, position, weight, idx, grad_output, grad_input, grad_position, grad_weight)
         return grad_input, grad_position, grad_weight, None
 
@@ -172,7 +195,9 @@ def interpolation(xyz, new_xyz, feat, offset, new_offset, k=3):
     norm = torch.sum(dist_recip, dim=1, keepdim=True)
     weight = dist_recip / norm # (n, 3)
 
-    new_feat = torch.cuda.FloatTensor(new_xyz.shape[0], feat.shape[1]).zero_()
+    new_feat = torch.zeros(
+        (new_xyz.shape[0], feat.shape[1]), device=feat.device, dtype=feat.dtype
+    )
     for i in range(k):
         new_feat += feat[idx[:, i].long(), :] * weight[:, i].unsqueeze(-1)
     return new_feat
@@ -192,7 +217,7 @@ class Interpolation(Function):
         weight = dist_recip / norm # (n, k)
 
         n, c, m = new_xyz.shape[0], input.shape[1], input.shape[0]
-        output = torch.cuda.FloatTensor(n, c).zero_()
+        output = torch.zeros((n, c), device=input.device, dtype=input.dtype)
         pointops_cuda.interpolation_forward_cuda(n, c, k, input, idx, weight, output)
         ctx.m, ctx.k = m, k
         ctx.save_for_backward(idx, weight)
@@ -207,7 +232,7 @@ class Interpolation(Function):
         m, k = ctx.m, ctx.k
         idx, weight = ctx.saved_tensors
         n, c = grad_output.shape
-        grad_input = torch.cuda.FloatTensor(m, c).zero_()
+        grad_input = torch.zeros((m, c), device=grad_output.device, dtype=grad_output.dtype)
         pointops_cuda.interpolation_backward_cuda(n, c, k, grad_output, idx, weight, grad_input)
         return None, None, grad_input, None, None, None
 

@@ -22,8 +22,8 @@ dataset:
   num_points: 32768
   use_color: true
   use_normal: false
-  data_dir: /home/wangzan/Data/SceneDiffuser/scannet_path_planning/
-  data_dir_slurm: /home/wangzan/scratch/Data/SceneDiffuser/scannet_path_planning/
+  data_dir: ${paths.scannet_path_planning_dir}
+  data_dir_slurm: ${task.dataset.data_dir}
 
   use_normalize: true
   repr_type: absolute # ['absolute', 'relative']

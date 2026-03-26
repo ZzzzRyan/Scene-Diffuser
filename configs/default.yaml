@@ -19,6 +19,22 @@ tb_dir: ${exp_dir}/tb_logs
 vis_dir: ${exp_dir}/visual
 ckpt_dir: ${exp_dir}/ckpts
 
+repo_root: ${hydra:runtime.cwd}
+paths:
+  # Pre-trained checkpoints live alongside training outputs under outputs/.
+  # Dataset assets live under data/ at the repository root.
+  # Override individual values from the CLI or environment variables.
+  checkpoints_dir: ${oc.env:SCENE_DIFFUSER_CHECKPOINTS_DIR,${output_dir}/checkpoints}
+  data_dir: ${oc.env:SCENE_DIFFUSER_DATA_DIR,${repo_root}/data}
+  point_transformer_ckpt: ${oc.env:SCENE_DIFFUSER_POINT_TRANSFORMER_CKPT,${paths.checkpoints_dir}/2022-04-13_18-29-56_POINTTRANS_C_32768/model.pth}
+  scannet_path_planning_dir: ${oc.env:SCENE_DIFFUSER_SCANNET_PATH_DIR,${paths.data_dir}/scannet_path_planning}
+  lemo_proxd_dir: ${oc.env:SCENE_DIFFUSER_LEMO_PROXD_DIR,${paths.data_dir}/PROXD_temp}
+  smplx_model_dir: ${oc.env:SCENE_DIFFUSER_SMPLX_MODEL_DIR,${paths.data_dir}/models_smplx_v1_1/models}
+  prox_dir: ${oc.env:SCENE_DIFFUSER_PROX_DIR,${paths.data_dir}/PROX}
+  vposer_dir: ${oc.env:SCENE_DIFFUSER_VPOSER_DIR,${paths.data_dir}/V02_05}
+  multidex_shadowhand_dir: ${oc.env:SCENE_DIFFUSER_MULTIDEX_SHADOWHAND_DIR,${paths.data_dir}/MultiDex_UR/shadowhand}
+  multidex_object_pcds_path: ${oc.env:SCENE_DIFFUSER_MULTIDEX_OBJECT_PCDS_PATH,${paths.data_dir}/MultiDex_UR/object_pcds.pkl}
+
 slurm: false
 gpu: 0
 

@@ -22,14 +22,14 @@ dataset:
   frame_interval_test: 10
   use_color: true
   use_normal: false
-  data_dir: /home/wangzan/Data/LEMO/PROX_temporal/PROX_temporal/PROXD_temp
-  data_dir_slurm: /home/wangzan/scratch/Data/LEMO/PROX_temporal/PROX_temporal/PROXD_temp
-  smpl_dir: /home/wangzan/Data/SHADE/models_smplx_v1_1/models/
-  smpl_dir_slurm: /home/wangzan/scratch/Data/SHADE/models_smplx_v1_1/models/
-  prox_dir: /home/wangzan/Data/SHADE/PROX/
-  prox_dir_slurm: /home/wangzan/scratch/Data/SHADE/PROX/
-  vposer_dir: '/home/wangzan/Data/SHADE/V02_05/'
-  vposer_dir_slurm: '/home/wangzan/scratch/Data/SHADE/V02_05/'
+  data_dir: ${paths.lemo_proxd_dir}
+  data_dir_slurm: ${task.dataset.data_dir}
+  smpl_dir: ${paths.smplx_model_dir}
+  smpl_dir_slurm: ${task.dataset.smpl_dir}
+  prox_dir: ${paths.prox_dir}
+  prox_dir_slurm: ${task.dataset.prox_dir}
+  vposer_dir: ${paths.vposer_dir}
+  vposer_dir_slurm: ${task.dataset.vposer_dir}
   smplx_pca_comps: 12
   smplx_model_device: cpu
 

@@ -91,7 +91,14 @@ class MultiDexShadowHandUR(Dataset):
         self.frames = []
         self.scene_pcds = {}
 
-        grasp_dataset = torch.load(os.path.join(self.data_dir, 'shadowhand_downsample.pt' if self.is_downsample else 'shadowhand.pt'))
+        grasp_dataset = torch.load(
+            os.path.join(
+                self.data_dir,
+                'shadowhand_downsample.pt' if self.is_downsample else 'shadowhand.pt',
+            ),
+            map_location='cpu',
+            weights_only=False,
+        )
         self.scene_pcds = pickle.load(open(self.scene_path, 'rb'))
         self.dataset_info = grasp_dataset['info']
         # pre-process the dataset info

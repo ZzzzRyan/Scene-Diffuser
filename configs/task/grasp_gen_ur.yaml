@@ -26,11 +26,10 @@ dataset:
   use_color: false
   use_normal: false
   is_downsample: true
-#  data_dir: /home/wangzan/Data/LEMO/PROX_temporal/PROX_temporal/PROXD_temp
-  data_dir: /home/puhao/data/MultiDex_UR/shadowhand/
-  data_dir_slurm: /home/lipuhao/data/MultiDex_UR/shadowhand/
-  scene_path: /home/puhao/data/MultiDex_UR/object_pcds.pkl
-  scene_path_slurm: /home/lipuhao/data/MultiDex_UR/object_pcds.pkl
+  data_dir: ${paths.multidex_shadowhand_dir}
+  data_dir_slurm: ${task.dataset.data_dir}
+  scene_path: ${paths.multidex_object_pcds_path}
+  scene_path_slurm: ${task.dataset.scene_path}
 
   train_transforms: ['NumpyToTensor']
   test_transforms: ['NumpyToTensor']

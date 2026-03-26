@@ -305,7 +305,6 @@ class MP3DPathPlanningEnvCore():
         return self.trajectory_length
 
 @ENV.register()
-@torch.no_grad()
 class PathPlanningEnvWrapper():
     def __init__(self, cfg: DictConfig) -> None:
         """ Path palnning environment class for path planning task.
@@ -439,7 +438,6 @@ class PathPlanningEnvWrapper():
             json.dump(res, fp)
 
 @ENV.register()
-@torch.no_grad()
 class PathPlanningEnvWrapperHF():
     def __init__(self, cfg: DictConfig) -> None:
         """ Path palnning environment class for path planning task.

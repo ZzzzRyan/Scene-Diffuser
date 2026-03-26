@@ -12,13 +12,11 @@ from utils.misc import random_str
 from utils.registry import Registry
 from utils.visualize import frame2gif, render_prox_scene, render_scannet_path
 from utils.visualize import create_trimesh_nodes_path, create_trimesh_node
-from utils.handmodel import get_handmodel
 from utils.plotly_utils import plot_mesh
 
 VISUALIZER = Registry('Visualizer')
 
 @VISUALIZER.register()
-@torch.no_grad()
 class PoseGenVisualizer():
     def __init__(self, cfg: DictConfig) -> None:
         """ Visual evaluation class for pose generation task.
@@ -127,7 +125,6 @@ class PoseGenVisualizer():
                 break
 
 @VISUALIZER.register()
-@torch.no_grad()
 class MotionGenVisualizer():
     def __init__(self, cfg: DictConfig) -> None:
         """ Visual evaluation class for motion generation task.
@@ -247,7 +244,6 @@ class MotionGenVisualizer():
                 break
 
 @VISUALIZER.register()
-@torch.no_grad()
 class PathPlanningRenderingVisualizer():
     def __init__(self, cfg: DictConfig) -> None:
         """ Visual evaluation class for path planning task. Directly rendering images.
@@ -344,7 +340,6 @@ class PathPlanningRenderingVisualizer():
                 break
 
 @VISUALIZER.register()
-@torch.no_grad()
 class GraspGenVisualizer():
     def __init__(self, cfg: DictConfig) -> None:
         """ Visual evaluation class for pose generation task.
@@ -353,6 +348,8 @@ class GraspGenVisualizer():
             cfg: visuzalizer configuration
         """
         self.ksample = cfg.ksample
+        from utils.handmodel import get_handmodel
+
         self.hand_model = get_handmodel(batch_size=self.ksample, device='cuda')
 
     def visualize(
@@ -405,7 +402,6 @@ class GraspGenVisualizer():
                     break
 
 @VISUALIZER.register()
-@torch.no_grad()
 class PoseGenVisualizerHF():
     def __init__(self, cfg: DictConfig) -> None:
         """ Visual evaluation class for pose generation task.
@@ -470,7 +466,6 @@ class PoseGenVisualizerHF():
             return res_images
 
 @VISUALIZER.register()
-@torch.no_grad()
 class MotionGenVisualizerHF():
     def __init__(self, cfg: DictConfig) -> None:
         """ Visual evaluation class for motion generation task.
@@ -538,7 +533,6 @@ class MotionGenVisualizerHF():
             return res_ksamples
 
 @VISUALIZER.register()
-@torch.no_grad()
 class PathPlanningRenderingVisualizerHF():
     def __init__(self, cfg: DictConfig) -> None:
         """ Visual evaluation class for path planning task. Directly rendering images.
@@ -610,4 +604,3 @@ def create_visualizer(cfg: DictConfig) -> nn.Module:
         A visualizer
     """
     return VISUALIZER.get(cfg.name)(cfg)
-

@@ -51,27 +51,21 @@ We introduce SceneDiffuser, a conditional generative model for 3D scene understa
 
 ## Setup
 
-1. Create a new `conda` environemnt and activate it.
+For a complete installation guide (Python 3.11 + PyTorch 2.x + CUDA 12.8), see [New Environment Installation Guide_CN](./install_new_env_cn.md).
 
-    ```bash
-    conda create -n 3d python=3.8
-    conda activate 3d
-    ```
+After finishing the guide, the normal workflow is simply:
 
-2. Install dependent libraries with `pip`.
+```bash
+conda activate scene-diff
+```
 
-    ```bash
-    pip install -r pre-requirements.txt
-    pip install -r requirements.txt
-    ```
+This README focuses on the tasks that are runnable on the current main branch with the default environment:
 
-    - We use `pytorch1.11` and `cuda11.3`, modify `pre-requirements.txt` to install [other versions](https://pytorch.org/get-started/previous-versions/) of `pytorch`.
+- `pose_gen`
+- `motion_gen`
+- `path_planning`
 
-3. Install [Isaac Gym](https://developer.nvidia.com/isaac-gym) and install [pointnet2](https://github.com/daveredrum/Pointnet2.ScanNet) by executing the following command (optional for grasp generation and arm motion planning).
-
-    ```bash
-    pip install git+https://github.com/daveredrum/Pointnet2.ScanNet.git#subdirectory=pointnet2
-    ```
+Tasks on the `obj` branch (for example grasp generation and robot-arm planning) need extra dependencies and are not covered below. Optional packages are listed in `requirements-optional.txt`.
 
 ## Data & Checkpoints
 
@@ -79,15 +73,22 @@ We introduce SceneDiffuser, a conditional generative model for 3D scene understa
 
 You can use our [pre-processed data](https://drive.google.com/drive/folders/1CKJER3CnVh0o8cwlN8a2c0kQ6HTEqvqj?usp=sharing) or process the data by yourself following the [instructions](./preprocessing/README.md).
 
-But, you also need to download some official released data assets which are not processed, see [instructions](./preprocessing/README.md). Please remember to use your own data path by modifying the path configuration in:
+Place data assets under `data/` at the repository root. The default layout is:
 
-- `scene_model.pretrained_weights` in `model/*.yaml` for the path of pre-trained scene encoder (if you use a pre-trained scene encoder)
+```text
+data/
+├── PROXD_temp/              # pose_gen, motion_gen
+├── PROX/                    # pose_gen, motion_gen
+├── models_smplx_v1_1/       # pose_gen, motion_gen
+├── V02_05/                  # only if optimizer.vposer=true
+└── scannet_path_planning/   # path_planning
+```
 
-- `dataset.*_dir`/`dataset.*_path` configurations in `task/*.yaml` for the path of data assets
+Data paths can be overridden via environment variables — see [New Environment Installation Guide](./install_new_env_cn.md) for details.
 
 ### 2. Checkpoints
 
-Download our [pre-trained model](https://drive.google.com/drive/folders/1CKJER3CnVh0o8cwlN8a2c0kQ6HTEqvqj?usp=sharing) and unzip them into a folder, e.g., `./outputs/`.
+Download our [pre-trained model](https://drive.google.com/drive/folders/1CKJER3CnVh0o8cwlN8a2c0kQ6HTEqvqj?usp=sharing) and place them under `./outputs/checkpoints/`.
 
 task|checkpoints|desc
 -|-|-
@@ -96,9 +97,8 @@ Pose Generation|2022-11-09_11-22-52_PoseGen_ddm4_lr1e-4_ep100|
 Motion Generation|2022-11-09_12-54-50_MotionGen_ddm_T200_lr1e-4_ep300|w/o start position
 Motion Generation|2022-11-09_14-28-12_MotionGen_ddm_T200_lr1e-4_ep300_obser|w/ start position
 Path Planning|2022-11-25_20-57-28_Path_ddm4_LR1e-4_E100_REL|
-Grasp Generation|2022-11-15_18-07-50_GPUR_l1_pn2_T100|
-Arm Motion Planning|2022-11-11_14-28-30_FK2Plan_ptr_T30_4|denoising step is 30
 
+For a first run, it is recommended to use the released checkpoints before training your own models.
 
 ## Task-1: Human Pose Generation in 3D Scenes
 
@@ -120,7 +120,7 @@ Arm Motion Planning|2022-11-11_14-28-30_FK2Plan_ptr_T30_4|denoising step is 30
 
 ```bash
 bash scripts/pose_gen/test.sh ${CKPT} [OPT]
-# e.g., bash scripts/pose_gen/test.sh ./outputs/2022-11-09_11-22-52_PoseGen_ddm4_lr1e-4_ep100/ OPT
+# e.g., bash scripts/pose_gen/test.sh ./outputs/checkpoints/2022-11-09_11-22-52_PoseGen_ddm4_lr1e-4_ep100/ OPT
 ```
 
 - `[OPT]` is optional for optimization-guided sampling.
@@ -129,7 +129,7 @@ bash scripts/pose_gen/test.sh ${CKPT} [OPT]
 
 ```bash
 bash scripts/pose_gen/sample.sh ${CKPT} [OPT]
-# e.g., bash scripts/pose_gen/sample.sh ./outputs/2022-11-09_11-22-52_PoseGen_ddm4_lr1e-4_ep100/ OPT
+# e.g., bash scripts/pose_gen/sample.sh ./outputs/checkpoints/2022-11-09_11-22-52_PoseGen_ddm4_lr1e-4_ep100/ OPT
 ```
 
 - `[OPT]` is optional for optimization-guided sampling.
@@ -156,7 +156,7 @@ bash scripts/pose_gen/sample.sh ${CKPT} [OPT]
 
 ```bash
 bash scripts/motion_gen/test.sh ${CKPT} [OPT]
-# e.g., bash scripts/motion_gen/test.sh ./outputs/2022-11-09_12-54-50_MotionGen_ddm_T200_lr1e-4_ep300/ OPT
+# e.g., bash scripts/motion_gen/test.sh ./outputs/checkpoints/2022-11-09_12-54-50_MotionGen_ddm_T200_lr1e-4_ep300/ OPT
 ```
 
 - `[OPT]` is optional for optimization-guided sampling.
@@ -165,48 +165,16 @@ bash scripts/motion_gen/test.sh ${CKPT} [OPT]
 
 ```bash
 bash scripts/motion_gen/sample.sh ${CKPT} [OPT]
-# e.g., bash scripts/motion_gen/sample.sh ./outputs/2022-11-09_12-54-50_MotionGen_ddm_T200_lr1e-4_ep300/ OPT
+# e.g., bash scripts/motion_gen/sample.sh ./outputs/checkpoints/2022-11-09_12-54-50_MotionGen_ddm_T200_lr1e-4_ep300/ OPT
 ```
 
 - `[OPT]` is optional for optimization-guided sampling.
 
-## Task-3: Dexterous Grasp Generation for 3D Objects
+## Task-3: Path Planning in 3D Scenes
 
-To run this code, you first need to change the git branch to `obj` by executing
+For a detailed beginner tutorial in Chinese, see **[Path Planning Tutorial](./tutorial_path_planning_cn.md)**.
 
-```bash
-git checkout obj
-```
-
-Make sure you have installed [Isaac Gym](https://developer.nvidia.com/isaac-gym) and [pointnet2](https://github.com/daveredrum/Pointnet2.ScanNet). See [Setup](#setup) section.
-
-### Train
-
-- Train with single gpu (one gpu is enough)
-
-    ```bash
-    bash scripts/grasp_gen_ur/train.sh ${EXP_NAME}
-    ```
-
-### Sample (Qualitative Visualization)
-
-```bash
-bash scripts/grasp_gen_ur/sample.sh ${CKPT} [OPT]
-# e.g., bash scripts/grasp_gen_ur/sample.sh ./outputs/2022-11-15_18-07-50_GPUR_l1_pn2_T100/ OPT
-```
-
-- `[OPT]` is optional for optimization-guided sampling.
-
-### Test (Quantitative Evaluation)
-
-You first need to run `scripts/grasp_gen_ur/sample.sh` to sample some results. Then we will compute quantitative metrics with these sampled results.
-
-```bash
-bash scripts/grasp_gen_ur/test.sh ${EVAL_DIR} ${DATASET_DIR}
-# e.g., bash scripts/grasp_gen_ur/test.sh outputs/2022-11-15_18-07-50_GPUR_l1_pn2_T100/eval/final/2023-04-20_13-06-44 YOUR_PATH/data/MultiDex_UR
-```
-
-## Task-4: Path Planning in 3D Scenes
+`plan.sh` and `sample.sh` both render images, so `data/scannet_path_planning/mesh/` must contain the corresponding ScanNet `.ply` files.
 
 ### Train
 
@@ -226,50 +194,19 @@ bash scripts/grasp_gen_ur/test.sh ${EVAL_DIR} ${DATASET_DIR}
 
 ```bash
 bash scripts/path_planning/plan.sh ${CKPT}
-# e.g., bash scripts/path_planning/plan.sh ./outputs/2022-11-25_20-57-28_Path_ddm4_LR1e-4_E100_REL/
+# e.g., bash scripts/path_planning/plan.sh ./outputs/checkpoints/2022-11-25_20-57-28_Path_ddm4_LR1e-4_E100_REL/
 ```
 
 ### Sample (Qualitative Visualization)
 
 ```bash
 bash scripts/path_planning/sample.sh ${CKPT} [OPT] [PLA]
-# e.g., bash scripts/path_planning/sample.sh ./outputs/2022-11-25_20-57-28_Path_ddm4_LR1e-4_E100_REL/ OPT PLA
+# e.g., bash scripts/path_planning/sample.sh ./outputs/checkpoints/2022-11-25_20-57-28_Path_ddm4_LR1e-4_E100_REL/ OPT PLA
 ```
 
 - The program will generate trajectories with given start position and scene; rendering the results into images. (The results not the planning results, just use diffuser to generate diverse trajectories.)
 - `[OPT]` is optional for optimization-guided sampling.
 - `[PLA]` is optional for planner-guided sampling.
-
-## Task-5: Motion Planning for Robot Arms
-
-To run this code, you first need to change the git branch to `obj` by executing
-
-```bash
-git checkout obj
-```
-
-Make sure you have installed [Isaac Gym](https://developer.nvidia.com/isaac-gym) and [pointnet2](https://github.com/daveredrum/Pointnet2.ScanNet). See [Setup](#setup) section.
-
-### Train
-
-- Train with single gpu
-
-    ```bash
-    bash scripts/franka_planning/train.sh ${EXP_NAME}
-    ```
-
-- Train with 4 GPUs (modify `scripts/path_planning/train_ddm.sh` to specify the visible GPUs)
-
-    ```bash
-    bash scripts/franka_planning/train_ddm.sh ${EXP_NAME}
-    ```
-
-### Test (Quantitative Evaluation)
-
-```bash
-bash scripts/franka_planning/plan.sh ${CKPT}
-# e.g., bash scripts/franka_planning/plan.sh outputs/2022-11-11_14-28-30_FK2Plan_ptr_T30_4/
-```
 
 ## Citation
 

@@ -1,0 +1,4 @@
+# CUDA/C++ extensions that must be built against the active PyTorch + CUDA toolchain.
+# Install this after `requirements.txt` inside the target conda environment.
+
+git+https://github.com/Silverster98/pointops@86c68b1e63092152b4ab14ff09b832c5d2d0dc97

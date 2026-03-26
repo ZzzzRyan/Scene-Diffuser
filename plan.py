@@ -22,7 +22,7 @@ def load_ckpt(model: torch.nn.Module, path: str) -> None:
     """
     assert os.path.exists(path), 'Can\'t find provided ckpt.'
 
-    saved_state_dict = torch.load(path)['model']
+    saved_state_dict = torch.load(path, map_location='cpu', weights_only=False)['model']
     model_state_dict = model.state_dict()
 
     for key in model_state_dict:
@@ -98,7 +98,8 @@ if __name__ == '__main__':
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
 
     main()

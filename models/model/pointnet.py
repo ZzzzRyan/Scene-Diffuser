@@ -60,7 +60,7 @@ class PointNetEnc(nn.Module):
         if not os.path.exists(weigth_path):
             raise Exception('Can\'t find pretrained point-transformer weights.')
 
-        model_dict = torch.load(weigth_path)
+        model_dict = torch.load(weigth_path, map_location='cpu', weights_only=False)
         static_dict = {}
         for key in model_dict.keys():
             if 'enc' in key:
@@ -80,4 +80,3 @@ if __name__ == '__main__':
     dummy_inputs = torch.randn(1, 2048, 3)
     o = random_model(dummy_inputs)
     print()
-
