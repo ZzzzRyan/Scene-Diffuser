@@ -172,7 +172,11 @@ bash scripts/motion_gen/sample.sh ${CKPT} [OPT]
 
 - `[OPT]` is optional for optimization-guided sampling.
 
-## Task-3: Path Planning in 3D Scenes
+## Task-3: Dexterous Grasp Generation for 3D Objects
+
+> This task is on the `obj` branch and requires extra dependencies and data preparation, which are not currently supported by the default environment.
+
+## Task-4: Path Planning in 3D Scenes
 
 For a detailed beginner tutorial in Chinese, see **[Path Planning Tutorial](./tutorial_path_planning_cn.md)**.
 
@@ -209,6 +213,10 @@ bash scripts/path_planning/sample.sh ${CKPT} [OPT] [PLA]
 - The program will generate trajectories with given start position and scene; rendering the results into images. (The results not the planning results, just use diffuser to generate diverse trajectories.)
 - `[OPT]` is optional for optimization-guided sampling.
 - `[PLA]` is optional for planner-guided sampling.
+
+## Task-5: Motion Planning for Robot Arms
+
+> This task is on the `obj` branch and requires extra dependencies and data preparation, which are not currently supported by the default environment.
 
 ## Citation
 
